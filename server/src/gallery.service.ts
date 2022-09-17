@@ -1,6 +1,5 @@
 import { CACHE_MANAGER, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import * as AdmZip from 'adm-zip';
 import { Cache } from 'cache-manager';
 import { readdir, readFile } from 'fs/promises';
 import * as path from 'path';
@@ -13,6 +12,7 @@ import GalleryMetadata from './models/metadata.model';
 import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 import { TagService } from './tag.service';
+import IZipEntry, { ZipCache } from './zipCache';
 
 @Injectable()
 export class GalleryService {
@@ -148,17 +148,21 @@ export class GalleryService {
       const zipEntries = zip.getEntries()
       if (imageId < zipEntries.length) {
         const zipEntry = zipEntries.sort(this.compareZipEntries)[imageId]
-        return new Promise((resolve, reject) => {
-          zip.readFileAsync(zipEntry, async (data, err) => {
-            if (err) {
-              reject(err)
-            }
-            if (data) {
-              const resizedData = await this.resize(data, width, height)
-              resolve(new GalleryImage(resizedData, zipEntry.name))
-            }
-          })
-        })
+        const data = await zip.readFileAsync(zipEntry);
+        const resizedData = await this.resize(data, width, height)
+        return new GalleryImage(resizedData, zipEntry.name)
+
+        // return new Promise((resolve, reject) => {
+        //   zip.readFileAsync(zipEntry, async (data, err) => {
+        //     if (err) {
+        //       reject(err)
+        //     }
+        //     if (data) {
+        //       const resizedData = await this.resize(data, width, height)
+        //       resolve(new GalleryImage(resizedData, zipEntry.name))
+        //     }
+        //   })
+        // })
       }
     }
 
@@ -166,8 +170,8 @@ export class GalleryService {
   }
 
   private async resize(data: Buffer, width?: number, height?: number): Promise<Buffer> {
-    sharp.concurrency(1)
-    sharp.cache(false)
+    //sharp.concurrency(1)
+    //sharp.cache(false)
     if (width || height) {
       return sharp(data)
         .resize(width, height)
@@ -178,9 +182,9 @@ export class GalleryService {
     }
   }
 
-  private async findZip(galleryId: number): Promise<AdmZip | null> {
+  private async findZip(galleryId: number): Promise<ZipCache | null> {
     const zipCacheKey = `gallery-${galleryId}-zip`
-    let zip = await this.cacheManager.get<AdmZip>(zipCacheKey)
+    let zip = await this.cacheManager.get<ZipCache>(zipCacheKey)
     if (zip) {
       Logger.debug(`Cache hit for ${zipCacheKey}.`)
     } else {
@@ -189,7 +193,7 @@ export class GalleryService {
       if (gallery) {
         const zipFile = path.join(gallery.dir, gallery.zipFilename)
         Logger.debug(zipFile)
-        zip = new AdmZip(zipFile)
+        zip = await ZipCache.create(zipFile)
         this.cacheManager.set(zipCacheKey, zip)
       }
     }
@@ -197,8 +201,8 @@ export class GalleryService {
     return zip ?? null
   }
 
-  private compareZipEntries(a: AdmZip.IZipEntry, b: AdmZip.IZipEntry): number {
-    return a.entryName.localeCompare(b.entryName, undefined, { numeric: true, sensitivity: 'base' })
+  private compareZipEntries(a: IZipEntry, b: IZipEntry): number {
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
   }
 
   async getImageCount(galleryId: number): Promise<number | null> {
