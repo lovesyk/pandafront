@@ -23,7 +23,7 @@ import * as CustomMemoryStore from '../custom-memory';
       synchronize: true
     }),
     TypeOrmModule.forFeature([GalleryEntity, Category, Tag]),
-    CacheModule.register({ store: CustomMemoryStore.create({ ttl: 5, ttlAutopurge: true }) })],
+    CacheModule.register({ store: CustomMemoryStore.create({ ttl: 500, ttlAutopurge: true }) })],
   controllers: [GalleryController, TagController, ScannerController],
   providers: [GalleryService, CategoryService, TagService, ScannerService],
 })
