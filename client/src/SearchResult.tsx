@@ -44,6 +44,11 @@ export default function SearchResult({ top }: { top: boolean }) {
     return searchRequest
   }
   const [searchRequest, setSearchRequest] = useState(createSearchRequest())
+  useEffect(() => {
+    const newSearchRequest = createSearchRequest();
+    setSearchRequest(newSearchRequest)
+    search(newSearchRequest);
+  }, [searchParams])
 
   const galleriesPerPage = 20
   const backend = new BackendClient()
@@ -58,34 +63,21 @@ export default function SearchResult({ top }: { top: boolean }) {
   }
 
   const [loading, setLoading] = useState(true)
-  const search = () => {
+  const search = (searchRequest : FindGalleryModel) => {
     setLoading(true)
-    backend.findGalleries({ title: searchRequest.title, includedTags: searchRequest.includedTags, excludedTags: searchRequest.excludedTags, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value); setLoading(false); })
+    backend.findGalleries({ ...searchRequest, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value); setLoading(false); })
       .catch(console.log)
-    backend.findGalleryCount({ title: searchRequest.title, includedTags: searchRequest.includedTags, excludedTags: searchRequest.excludedTags }).then(setGalleryCount).catch(console.log)
+    backend.findGalleryCount({ ...searchRequest }).then(setGalleryCount).catch(console.log)
   }
-  const updateSearchParams = () => {
-    const newSearchParams: URLSearchParamsInit = {}
-    if (searchRequest.title) {
-      newSearchParams.title = searchRequest.title
+
+  const setPage = (page: number): void => {
+    if (page > 1) {
+      searchParams.set(PAGE_PARAM, page.toString());
+    } else {
+      searchParams.delete(PAGE_PARAM);
     }
-    if (searchRequest.includedTags && searchRequest.includedTags.length > 0) {
-      newSearchParams.includedTags = JSON.stringify(searchRequest.includedTags)
-    }
-    if (searchRequest.excludedTags && searchRequest.excludedTags.length > 0) {
-      newSearchParams.excludedTags = JSON.stringify(searchRequest.excludedTags)
-    }
-    if (searchRequest.page !== 1) {
-      newSearchParams.page = JSON.stringify(searchRequest.page)
-    }
-    setSearchParams(newSearchParams)
+    setSearchParams(searchParams)
   }
-  useEffect(() => {
-    if (!top) {
-      updateSearchParams();
-      search()
-    }
-  }, [searchRequest])
 
   return (
     <>
@@ -101,7 +93,7 @@ export default function SearchResult({ top }: { top: boolean }) {
       </Box>
       {top ? <></> :
         <>
-          <SearchPaging galleryCount={galleryCount} galleriesPerPage={galleriesPerPage} page={searchRequest.page} setPage={(page: number) => { setSearchRequest({ ...searchRequest, page: page }); }} />
+          <SearchPaging galleryCount={galleryCount} galleriesPerPage={galleriesPerPage} page={searchRequest.page} setPage={setPage} />
           {loading ?
             <b>Loading...</b>
             :
@@ -112,7 +104,7 @@ export default function SearchResult({ top }: { top: boolean }) {
                 })
               }
             </List>}
-          <SearchPaging galleryCount={galleryCount} galleriesPerPage={galleriesPerPage} page={searchRequest.page} setPage={(page: number) => { setSearchRequest({ ...searchRequest, page: page }); }} />
+          <SearchPaging galleryCount={galleryCount} galleriesPerPage={galleriesPerPage} page={searchRequest.page} setPage={setPage} />
         </>}
     </>
   );
