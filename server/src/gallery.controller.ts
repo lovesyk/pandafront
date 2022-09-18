@@ -27,8 +27,11 @@ export class GalleryController {
     if (query.title) {
       request.title = query.title
     }
-    if (query.tags) {
-      request.tags = JSON.parse(query.tags)
+    if (query.includedTags) {
+      request.includedTags = JSON.parse(query.includedTags)
+    }
+    if (query.excludedTags) {
+      request.excludedTags = JSON.parse(query.excludedTags)
     }
     if (query.skip) {
       request.skip = parseInt(query.skip)

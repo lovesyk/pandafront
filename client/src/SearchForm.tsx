@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './App.css';
 import FindGalleryModel from './models/findGallery.model';
-import SearchIncludedTags from './SearchIncludedTags';
+import SearchTags from './SearchTags';
 import SearchTitle from './SearchTitle';
 
 export default function SearchForm({ searchRequest, setSearchRequest }: { searchRequest: FindGalleryModel, setSearchRequest: (searchRequest: FindGalleryModel) => void }) {
@@ -24,17 +24,20 @@ export default function SearchForm({ searchRequest, setSearchRequest }: { search
   // }
 
   const [searchTerm, setSearchTerm] = useState(searchRequest.title)
-  const [searchTags, setSearchTags] = useState(searchRequest.tags)
+  const [includedTags, setIncludedTags] = useState(searchRequest.includedTags)
+  const [excludedTags, setExcludedTags] = useState(searchRequest.excludedTags)
   useEffect(() => {
     setSearchTerm(searchRequest.title)
-    setSearchTags(searchRequest.tags)
+    setIncludedTags(searchRequest.includedTags)
+    setExcludedTags(searchRequest.excludedTags)
   }, [searchRequest])
 
   const updateSearchRequest = () => {
     setSearchRequest({
       ...searchRequest,
       title: searchTerm,
-      tags: searchTags,
+      includedTags: includedTags,
+      excludedTags: excludedTags,
     })
   }
 
@@ -64,7 +67,8 @@ export default function SearchForm({ searchRequest, setSearchRequest }: { search
       width="500px"
     >
       <SearchTitle searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-      <SearchIncludedTags searchTags={searchTags} setSearchTags={setSearchTags} />
+      <SearchTags searchTags={includedTags} setSearchTags={setIncludedTags} id='included-tags' placeholder='Included tags' />
+      <SearchTags searchTags={excludedTags} setSearchTags={setExcludedTags} id='excluded-tags' placeholder='Excluded tags'  />
       {/* <Button component={Link} to={{
           pathname: "/search",
           search: createGallerySearchParams()

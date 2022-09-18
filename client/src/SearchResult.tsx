@@ -13,7 +13,8 @@ import Settings from './Settings';
 
 export default function SearchResult({ top }: { top: boolean }) {
   const SEARCH_PARAM = 'title'
-  const TAGS_PARAM = 'tags'
+  const INCLUDED_TAGS_PARAM = 'includedTags'
+  const EXCLUDED_TAGS_PARAM = 'excludedTags'
   const PAGE_PARAM = 'page'
   const [searchParams, setSearchParams] = useSearchParams()
   const createSearchRequest = (): FindGalleryModel => {
@@ -23,9 +24,13 @@ export default function SearchResult({ top }: { top: boolean }) {
       searchRequest.title = title
     }
 
-    const tags = searchParams.get(TAGS_PARAM)
-    if (tags && tags.length > 0) {
-      searchRequest.tags = JSON.parse(tags)
+    const includedTags = searchParams.get(INCLUDED_TAGS_PARAM)
+    if (includedTags && includedTags.length > 0) {
+      searchRequest.includedTags = JSON.parse(includedTags)
+    }
+    const excludedTags = searchParams.get(EXCLUDED_TAGS_PARAM)
+    if (excludedTags && excludedTags.length > 0) {
+      searchRequest.excludedTags = JSON.parse(excludedTags)
     }
 
     const pageString = searchParams.get(PAGE_PARAM)
@@ -43,59 +48,32 @@ export default function SearchResult({ top }: { top: boolean }) {
   const galleriesPerPage = 20
   const backend = new BackendClient()
 
-  // const [searchTerm, setSearchTerm] = useState(searchParams.get(SEARCH_PARAM) ?? '')
-  // useEffect(() => {
-  //   if (searchTerm) {
-  //     searchParams.set(SEARCH_PARAM, searchTerm)
-  //   } else {
-  //     searchParams.delete(SEARCH_PARAM)
-  //   }
-  //   setSearchParams(searchParams)
-  // }, [searchTerm])
-
-  // const [searchTags, setSearchTags] = useState(JSON.parse(searchParams.get(TAGS_PARAM) ?? '[]') as string[])
-  // useEffect(() => {
-  //   if (searchTags && searchTags.length > 0) {
-  //     searchParams.set(TAGS_PARAM, JSON.stringify(searchTags))
-  //   } else {
-  //     searchParams.delete(TAGS_PARAM)
-  //   }
-  //   setSearchParams(searchParams)
-  // }, [searchTags])
-
-  // const [page, setPage] = useState<number>(searchParams.get(PAGE_PARAM) ? parseInt(searchParams.get(PAGE_PARAM)!) : 1)
-  // useEffect(() => {
-  //   if (page !== 1) {
-  //     searchParams.set(PAGE_PARAM, JSON.stringify(page))
-  //   } else {
-  //     searchParams.delete(PAGE_PARAM)
-  //   }
-  //   setSearchParams(searchParams)
-  // }, [page])
-
   const [galleries, setGalleries] = useState(Array<Gallery>())
   const [galleryCount, setGalleryCount] = useState<number>(0)
 
   const addTag = (tag: string) => {
-    if (!searchRequest.tags.includes(tag)) {
-      setSearchRequest({ ...searchRequest, tags: [...searchRequest.tags, tag] })
+    if (!searchRequest.includedTags.includes(tag)) {
+      setSearchRequest({ ...searchRequest, includedTags: [...searchRequest.includedTags, tag] })
     }
   }
 
   const [loading, setLoading] = useState(true)
   const search = () => {
     setLoading(true)
-    backend.findGalleries({ title: searchRequest.title, tags: searchRequest.tags, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value); setLoading(false); })
+    backend.findGalleries({ title: searchRequest.title, includedTags: searchRequest.includedTags, excludedTags: searchRequest.excludedTags, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value); setLoading(false); })
       .catch(console.log)
-    backend.findGalleryCount({ title: searchRequest.title, tags: searchRequest.tags }).then(setGalleryCount).catch(console.log)
+    backend.findGalleryCount({ title: searchRequest.title, includedTags: searchRequest.includedTags, excludedTags: searchRequest.excludedTags }).then(setGalleryCount).catch(console.log)
   }
   const updateSearchParams = () => {
     const newSearchParams: URLSearchParamsInit = {}
     if (searchRequest.title) {
       newSearchParams.title = searchRequest.title
     }
-    if (searchRequest.tags && searchRequest.tags.length > 0) {
-      newSearchParams.tags = JSON.stringify(searchRequest.tags)
+    if (searchRequest.includedTags && searchRequest.includedTags.length > 0) {
+      newSearchParams.includedTags = JSON.stringify(searchRequest.includedTags)
+    }
+    if (searchRequest.excludedTags && searchRequest.excludedTags.length > 0) {
+      newSearchParams.excludedTags = JSON.stringify(searchRequest.excludedTags)
     }
     if (searchRequest.page !== 1) {
       newSearchParams.page = JSON.stringify(searchRequest.page)

@@ -1,5 +1,6 @@
 export default class FindGalleryModel {
     title = ''
-    tags: string[] = []
+    includedTags: string[] = []
+    excludedTags: string[] = []
     page = 1
 }

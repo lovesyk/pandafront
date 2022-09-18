@@ -46,8 +46,11 @@ export default class BackendClient {
     if (request.title) {
       searchParams.set('title', request.title)
     }
-    if (request.tags && request.tags.length > 0) {
-      searchParams.set('tags', JSON.stringify(request.tags))
+    if (request.includedTags && request.includedTags.length > 0) {
+      searchParams.set('includedTags', JSON.stringify(request.includedTags))
+    }
+    if (request.excludedTags && request.excludedTags.length > 0) {
+      searchParams.set('excludedTags', JSON.stringify(request.excludedTags))
     }
     if (request.skip) {
       searchParams.set('skip', JSON.stringify(request.skip))

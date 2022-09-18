@@ -236,20 +236,36 @@ export class GalleryService {
     let queryBuilder = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
     queryBuilder.leftJoinAndSelect('gallery_entity.category', 'category')
     queryBuilder.leftJoinAndSelect('gallery_entity.tags', 'tag')
-    if (request.tags.length > 0) {
-      const subquery: any = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
-        .select("gallery_entity_tag.galleryEntityId", "galleryEntityId")
-        .leftJoin('gallery_entity.tags', 'tag')
-        .where('tag.name IN(:...name)', { name: request.tags })
+    if (request.includedTags.length > 0) {
+      const subquery = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
+        .select("gallery_entity_included_tag.galleryEntityId", "galleryEntityId")
+        .leftJoin('gallery_entity.tags', 'included_tag')
+        .where('included_tag.name IN(:...includedNames)', { includedNames: request.includedTags })
         .groupBy('gallery_entity.id')
-        .having('COUNT(DISTINCT tag.id) = :count', { count: request.tags.length })
+        .having('COUNT(DISTINCT included_tag.id) = :count', { count: request.includedTags.length })
 
       queryBuilder
-        .innerJoin("(" + subquery.getQuery() + ")", "tag_filter", "gallery_entity.id = tag_filter.galleryEntityId")
+        .innerJoin("(" + subquery.getQuery() + ")", "included_tag_filter", "gallery_entity.id = included_tag_filter.galleryEntityId")
         .setParameters(subquery.getParameters())
     }
+    if (request.excludedTags.length > 0) {
+      const subquery = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
+        .select("gallery_entity_excluded_tag.galleryEntityId", "galleryEntityId")
+        .leftJoin('gallery_entity.tags', 'excluded_tag')
+        .where('excluded_tag.name IN(:...excludedNames)', { excludedNames: request.excludedTags })
+        .groupBy('gallery_entity.id')
+        .having('COUNT(DISTINCT excluded_tag.id) >= 0')
+
+      queryBuilder
+        .leftJoin("(" + subquery.getQuery() + ")", "excluded_tag_filter", "gallery_entity.id = excluded_tag_filter.galleryEntityId")
+        .setParameters(subquery.getParameters())
+    }
+    queryBuilder.where('1 == 1')
+    if (request.excludedTags.length > 0) {
+      queryBuilder.andWhere('excluded_tag_filter.galleryEntityId IS NULL')
+    }
     if (request.title) {
-      queryBuilder.where('gallery_entity.title LIKE :title OR gallery_entity.titleJpn LIKE :title', { title: `%${request.title}%` })
+      queryBuilder.andWhere('(gallery_entity.title LIKE :title OR gallery_entity.titleJpn LIKE :title)', { title: `%${request.title}%` })
     }
 
     return queryBuilder

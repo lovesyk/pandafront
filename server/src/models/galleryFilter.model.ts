@@ -1,6 +1,7 @@
 export interface GalleryFilter {
     title?: string
-    tags?: string[]
+    includedTags?: string[]
+    excludedTags?: string[]
     skip: number
     take: number
 }

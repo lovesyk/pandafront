@@ -1,6 +1,7 @@
 export interface FindGalleriesQuery {
     title?: string
-    tags?: string
+    includedTags?: string
+    excludedTags?: string
     skip?: string
     take?: string
 }
