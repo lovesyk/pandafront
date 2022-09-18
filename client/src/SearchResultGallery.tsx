@@ -11,7 +11,7 @@ export default function SearchResultGallery({ gallery, addTag }: { gallery: Gall
         <Avatar variant="square" src={gallery.thumbnailUrl} alt="Gallery thumbnail" sx={{ height: '200px', width: '200px' }} />
       </ListItemAvatar>
       <Stack direction="column">
-        <ListItemText primary={gallery.title} />
+        <ListItemText primary={gallery.titleJpn && gallery.titleJpn.match(/\S/g) ? gallery.titleJpn : gallery.title} />
         <Grid>
           {
             gallery.tags.map(tag => {

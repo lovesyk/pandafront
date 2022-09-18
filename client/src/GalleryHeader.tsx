@@ -9,12 +9,12 @@ export default function GalleryHeader({ gallery }: { gallery: GalleryMetadata })
         <Table>
           <TableBody>
             <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>{gallery.title}</TableCell>
-            </TableRow>
-            <TableRow>
               <TableCell>Japanese Title</TableCell>
               <TableCell>{gallery.titleJpn}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>English Title</TableCell>
+              <TableCell>{gallery.title}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell>Category</TableCell>
