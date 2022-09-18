@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './App.css';
 import BackendClient from './BackendClient';
+import GalleryHeader from './GalleryHeader';
 import GalleryMetadata from './models/metadata.model';
 
 export default function Gallery() {
@@ -25,6 +26,7 @@ export default function Gallery() {
   return (
     gallery ?
       <div>
+        <GalleryHeader gallery={gallery} />
         {
           imageUrls.map((imageUrl, index) => {
             return (
