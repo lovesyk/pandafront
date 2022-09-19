@@ -84,7 +84,7 @@ export class GalleryService {
 
     let deleteGallery = true;
 
-    this.entityManager.transaction(async (transactionalEntityManager) => {
+    await this.entityManager.transaction(async (transactionalEntityManager) => {
       const galleryRepository = transactionalEntityManager.getRepository(GalleryEntity)
       if (metadataFilePath && zipFilename) {
         let metadataFile: OriginalGalleryMetadata;
@@ -114,7 +114,7 @@ export class GalleryService {
           torrentCount: metadataFile.torrentcount,
           tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, transactionalEntityManager)
         }
-        const gallery: GalleryEntity = { ...newGallery, ...oldGallery }
+        const gallery: GalleryEntity = { ...oldGallery, ...newGallery, updatedDate: new Date() }
 
         await galleryRepository.save(gallery)
           .then(() => Logger.debug(`Cached gallery with ID ${gallery.gid} in DB.`))

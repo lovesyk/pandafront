@@ -18,7 +18,7 @@ export class ScannerController {
 
   @Post("enable")
   async enable() {
-    await this.scannerService.enable()
+    this.scannerService.enable()
   }
 
   @Post("disable")
