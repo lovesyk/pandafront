@@ -25,13 +25,18 @@ export default function Image() {
     backend.findGallery(galleryId).then(setGallery)
   }, [])
 
-  document.onkeydown = function(evt) {
-    evt = evt || window.event;
-    if (evt.keyCode === 39) {
-      document.getElementById("forwardButton")?.click()
+  document.onkeydown = function(event : KeyboardEvent) {
+    if (event.key === 'ArrowLeft') {
+      const backButton = document.getElementById('backButton') as HTMLButtonElement
+      if (!backButton.ariaDisabled) {
+        backButton.click()
+      }
     }
-    if (evt.keyCode === 37) {
-      document.getElementById("backButton")?.click()
+    if (event.key === 'ArrowRight') {
+      const forwardButton = document.getElementById('forwardButton') as HTMLButtonElement
+      if (!forwardButton.ariaDisabled) {
+        forwardButton.click()
+      }
     }
 };
   return (
