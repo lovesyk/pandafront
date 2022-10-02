@@ -5,11 +5,12 @@ import { ScannerStats } from './models/scannerStats.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 
 export default class BackendClient {
-  baseUrl = 'http://172.16.2.200:3000'
-  baseUrlScanner = 'http://172.16.2.202:3000'
+  private getServerUrl() {
+    return `${location.protocol}//${location.host}/server`
+  }
 
   async findGalleries(request: FindGalleriesRequest): Promise<Gallery[]> {
-    const url = new URL(`${this.baseUrl}/galleries`)
+    const url = new URL(`${this.getServerUrl()}/galleries`)
     this.addFindGalleriesRequestSearchParams(url.searchParams, request)
 
     return fetch(url)
@@ -18,7 +19,7 @@ export default class BackendClient {
         return galleryMetadataList.map(galleryMetadata => {
           return {
             ...galleryMetadata,
-            thumbnailUrl: `${this.baseUrl}/galleries/${galleryMetadata.gid}/thumbnail`
+            thumbnailUrl: `${this.getServerUrl()}/galleries/${galleryMetadata.gid}/thumbnail`
           }
         })
       })
@@ -29,7 +30,7 @@ export default class BackendClient {
   }
 
   async findGalleryCount(request: FindGalleriesRequest): Promise<number> {
-    const url = new URL(`${this.baseUrl}/galleries/count`)
+    const url = new URL(`${this.getServerUrl()}/galleries/count`)
     this.addFindGalleriesRequestSearchParams(url.searchParams, request)
 
     return fetch(url)
@@ -61,18 +62,18 @@ export default class BackendClient {
   }
 
   async findGallery(gid: number): Promise<Gallery> {
-    return await fetch(`${this.baseUrl}/galleries/${gid}`)
+    return await fetch(`${this.getServerUrl()}/galleries/${gid}`)
       .then(async response => {
         const galleryMetadata: GalleryMetadata = await response.json()
         return {
           ...galleryMetadata,
-          thumbnailUrl: `${this.baseUrl}/galleries/${galleryMetadata.gid}/thumbnail`
+          thumbnailUrl: `${this.getServerUrl()}/galleries/${galleryMetadata.gid}/thumbnail`
         }
       })
   }
 
   getImageUrl(galleryId: number, imageId: number, width?: number, height?: number): string {
-    let url = `${this.baseUrl}/galleries/${galleryId}/images/${imageId}`
+    let url = `${this.getServerUrl()}/galleries/${galleryId}/images/${imageId}`
     if (width) {
       url += `?width=${width}`
       if (height) {
@@ -87,7 +88,7 @@ export default class BackendClient {
   }
 
   async findTags(name: string): Promise<string[]> {
-    return fetch(`${this.baseUrl}/tags?name=${name}`)
+    return fetch(`${this.getServerUrl()}/tags?name=${name}`)
       .then(response => response.json())
       .catch(err => {
         console.log(err.message)
@@ -96,7 +97,7 @@ export default class BackendClient {
   }
 
   async getScannerStats(): Promise<ScannerStats> {
-    return fetch(`${this.baseUrlScanner}/scanner/stats`, { method: 'GET' })
+    return fetch(`${this.getServerUrl()}/scanner/stats`, { method: 'GET' })
       .then(response => response.json())
       .catch(err => {
         console.log(err.message)
@@ -104,7 +105,7 @@ export default class BackendClient {
   }
 
   async enableScanner() {
-    return fetch(`${this.baseUrlScanner}/scanner/enable`, { method: 'POST' })
+    return fetch(`${this.getServerUrl()}/scanner/enable`, { method: 'POST' })
       .then(response => response.json())
       .catch(err => {
         console.log(err.message)
@@ -112,7 +113,7 @@ export default class BackendClient {
   }
 
   async disableScanner() {
-    return fetch(`${this.baseUrlScanner}/scanner/disable`, { method: 'POST' })
+    return fetch(`${this.getServerUrl()}/scanner/disable`, { method: 'POST' })
       .then(response => response.json())
       .catch(err => {
         console.log(err.message)
