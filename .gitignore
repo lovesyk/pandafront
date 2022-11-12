@@ -352,3 +352,6 @@ MigrationBackup/
 # pandafront
 docker-compose.yml
 server/app.sql*
+server/core
+.vscode
+package-lock.json
