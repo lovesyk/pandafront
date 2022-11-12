@@ -45,7 +45,7 @@ export default function Image() {
         <IconButton id="backButton" aria-label="backward" size="large" component={Link} to={`/galleries/${gallery.gid}/images/${imageId - 1}`} disabled={imageId <= 0} sx={{ borderRadius: '0' }}>
           <ArrowBackIcon fontSize="inherit" />
         </IconButton>
-        <img src={backend.getImageUrl(galleryId, imageId, undefined, getWindowDimensions().height)} alt="Image" />
+        <img src={backend.getImageUrl(galleryId, imageId, undefined, undefined)} alt="Image" />
         <IconButton id="forwardButton" aria-label="forward" size="large" component={Link} to={`/galleries/${gallery.gid}/images/${imageId + 1}`} disabled={imageId > gallery.fileCount - 2} sx={{ borderRadius: '0' }}>
           <ArrowForwardIcon fontSize="inherit" />
         </IconButton>
