@@ -19,11 +19,6 @@ export default function SearchForm({ searchRequest, setSearchRequest }: { search
       excludedTags: excludedTags,
     })
   }, [searchTerm, includedTags, excludedTags])
-  useEffect(() => {
-    setSearchTerm(searchRequest.title)
-    setIncludedTags(searchRequest.includedTags)
-    setExcludedTags(searchRequest.excludedTags)
-  }, [searchRequest])
 
   const createSearchParamsString = (): string => {
     const newSearchParams: URLSearchParamsInit = {}

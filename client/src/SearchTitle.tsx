@@ -4,6 +4,6 @@ import './App.css';
 
 export default function SearchTitle({ searchTerm, setSearchTerm }: { searchTerm: string, setSearchTerm: React.Dispatch<React.SetStateAction<string>> }) {
   return (
-    <TextField label="Title search" variant="outlined" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} />
+    <TextField label="Title search" variant="outlined" defaultValue={searchTerm} onChange={event => setSearchTerm(event.target.value)} />
   );
 }
