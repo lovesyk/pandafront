@@ -6,7 +6,7 @@ import { FindGalleriesRequest } from './requests/findGalleries.request';
 
 export default class BackendClient {
   private getServerUrl() {
-    return `${location.protocol}//${location.host}/server`
+    return `${window.location.protocol}//${window.location.host}/server`
   }
 
   async findGalleries(request: FindGalleriesRequest): Promise<Gallery[]> {
