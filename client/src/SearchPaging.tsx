@@ -6,7 +6,7 @@ export default function SearchPaging({ galleryCount, galleriesPerPage, page, set
     <Stack direction='column'>
       <p>Total gallery count: {galleryCount}</p>
       <Stack spacing={2}>
-        <Pagination count={Math.ceil(galleryCount / galleriesPerPage)} variant="outlined" shape="rounded" page={page} onChange={(event, page) => setPage(page)} />
+        <Pagination count={Math.ceil(galleryCount / galleriesPerPage)} siblingCount={2} variant="outlined" shape="rounded" page={page} onChange={(event, page) => setPage(page)} />
       </Stack>
     </Stack>
   );
