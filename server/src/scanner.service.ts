@@ -12,6 +12,7 @@ import { ScannerStats } from './models/scannerStats.model';
 export class ScannerService {
   private events = [];
   initialScanRunning = true
+  watcherEnabled = false
   watcher: chokidar.FSWatcher | null = null
 
   constructor(@InjectEntityManager() private entityManager: EntityManager,
@@ -42,6 +43,7 @@ export class ScannerService {
       Logger.debug("Stopping current watcher...")
       await this.watcher.close()
       this.watcher = null
+      this.watcherEnabled = false
     }
   }
 
@@ -67,6 +69,7 @@ export class ScannerService {
   async enable() {
     Logger.debug("Starting new watcher...")
     const root = "/data"
+    this.watcherEnabled = true
     // https://github.com/paulmillr/chokidar/issues/1011
     await this.scanManually(root)
 
@@ -77,7 +80,7 @@ export class ScannerService {
 
   getStats(): ScannerStats {
     return {
-      enabled: this.watcher !== null,
+      enabled: this.watcherEnabled,
       // watched: this.watcher?.getWatched() ?? {}
     }
   }
