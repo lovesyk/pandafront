@@ -17,7 +17,7 @@ export default function Gallery() {
 
       let imageUrls = Array<string>()
       for (let i = 0; i < gallery.fileCount ?? 0; ++i) {
-        imageUrls.push(backend.getImageUrl(gallery.gid, i, 200))
+        imageUrls.push(backend.getImageUrl(gallery.gid, i, 200, 200))
       }
       setImageUrls(imageUrls)
     })
@@ -30,8 +30,8 @@ export default function Gallery() {
         {
           imageUrls.map((imageUrl, index) => {
             return (
-              <Link to={`/galleries/${galleryId}/images/${index}`}>
-                <img src={imageUrl} alt="Image" style={{ height: "200px" }} />
+              <Link to={`/galleries/${galleryId}/images/${index}`} style={{ height: "200px", width: "200px", display: "inline-flex", verticalAlign : "middle", justifyContent: "center", alignItems : "center" }}>
+                <img src={imageUrl} alt="Image" />
               </Link>
             )
           })

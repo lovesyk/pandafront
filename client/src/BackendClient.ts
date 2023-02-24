@@ -79,8 +79,7 @@ export default class BackendClient {
       if (height) {
         url += `&height=${height}`
       }
-    }
-    if (height) {
+    } else if (height) {
       url += `?height=${height}`
     }
 

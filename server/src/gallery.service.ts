@@ -154,20 +154,8 @@ export class GalleryService {
         if (imageId < zipEntries.length) {
           const zipEntry = zipEntries.sort(this.compareZipEntries)[imageId]
           const data = await zip.readFileAsync(zipEntry);
-          const resizedData = await this.resize(data, width, height)
-          return new GalleryImage(resizedData, zipEntry.name)
-
-          // return new Promise((resolve, reject) => {
-          //   zip.readFileAsync(zipEntry, async (data, err) => {
-          //     if (err) {
-          //       reject(err)
-          //     }
-          //     if (data) {
-          //       const resizedData = await this.resize(data, width, height)
-          //       resolve(new GalleryImage(resizedData, zipEntry.name))
-          //     }
-          //   })
-          // })
+          const image = new GalleryImage(data, zipEntry.name)
+          return await this.resize(image, width, height)
         }
       }
 
@@ -188,17 +176,30 @@ export class GalleryService {
     }
   }
 
-  private async resize(data: Buffer, width?: number, height?: number): Promise<Buffer> {
-    //sharp.concurrency(1)
-    //sharp.cache(false)
-    if (width || height) {
-      return sharp(data)
-        .resize(width, height)
-        .jpeg({ mozjpeg: true })
-        .toBuffer()
-    } else {
-      return data;
+  private async resize(image: GalleryImage, width?: number, height?: number): Promise<GalleryImage> {
+    const thumbnail = width === 200 && height === 200
+
+    if (!thumbnail && image.mimeType === 'image/gif') {
+      return image
     }
+
+    if (width || height) {
+      let sharpImage = await sharp(image.buffer)
+
+      let resizeOptions: sharp.ResizeOptions = { width: width, height: height, kernel: "cubic" }
+      if (!thumbnail) {
+        resizeOptions &&= { fit: 'inside', withoutEnlargement: true }
+      }
+
+      const { data, info } = await sharpImage.
+        resize(resizeOptions).
+        jpeg({ force: true }).
+        toBuffer({ resolveWithObject: true })
+
+      image.overrideBuffer(data, info.format)
+    }
+
+    return image
   }
 
   private async findZip(galleryId: number): Promise<ZipCache | null> {
