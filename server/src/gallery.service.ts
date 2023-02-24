@@ -13,6 +13,7 @@ import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 import { TagService } from './tag.service';
 import IZipEntry, { ZipCache } from './zipCache';
+import * as entities from "entities";
 
 @Injectable()
 export class GalleryService {
@@ -35,7 +36,12 @@ export class GalleryService {
 
   async readMetadata(metadataFilePath: string): Promise<OriginalGalleryMetadata> {
     const json = await readFile(metadataFilePath, "utf8")
-    return JSON.parse(json)
+    return JSON.parse(json, (key, value) => {
+      if (typeof value === 'string') {
+        return entities.decode(value)
+      }
+      return value
+    })
   }
 
   toApi(galleryEntity: GalleryEntity): GalleryMetadata {
