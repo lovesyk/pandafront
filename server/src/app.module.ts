@@ -21,7 +21,7 @@ import { TagService } from './tag.service';
       synchronize: true
     }),
     TypeOrmModule.forFeature([GalleryEntity, Category, Tag]),
-    CacheModule.register({ ttl: 500 })],
+    CacheModule.register({ ttl: 5 * 60 * 1000 })],
   controllers: [GalleryController, TagController, ScannerController],
   providers: [GalleryService, CategoryService, TagService, ScannerService],
 })
