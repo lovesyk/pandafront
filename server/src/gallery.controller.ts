@@ -1,7 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Logger, Param, Query, Res, StreamableFile } from '@nestjs/common';
 import { Response } from 'express';
 import { GalleryService } from './gallery.service';
-import { GalleryFilter } from './models/galleryFilter.model';
 import GalleryMetadata from './models/metadata.model';
 import { FindGalleriesQuery } from './queries/findGalleries.query';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
@@ -9,8 +8,7 @@ import { FindGalleriesRequest } from './requests/findGalleries.request';
 @Controller("galleries")
 export class GalleryController {
   constructor(private galleryService: GalleryService) {
-    // setInterval(() => { Logger.warn("GC..."); global.gc()  } , 2000)
-   }
+  }
 
   @Get()
   async getGalleries(@Query() query: FindGalleriesQuery): Promise<GalleryMetadata[]> {

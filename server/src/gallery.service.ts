@@ -1,6 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
+import * as entities from "entities";
 import { readdir, readFile } from 'fs/promises';
 import * as path from 'path';
 import * as sharp from 'sharp';
@@ -13,7 +14,6 @@ import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 import { TagService } from './tag.service';
 import IZipEntry, { ZipCache } from './zipCache';
-import * as entities from "entities";
 
 @Injectable()
 export class GalleryService {
