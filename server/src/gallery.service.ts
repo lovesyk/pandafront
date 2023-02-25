@@ -194,7 +194,7 @@ export class GalleryService {
 
       let resizeOptions: sharp.ResizeOptions = { width: width, height: height, kernel: "cubic" }
       if (!thumbnail) {
-        resizeOptions &&= { fit: 'inside', withoutEnlargement: true }
+        resizeOptions = { ...resizeOptions, fit: 'inside', withoutEnlargement: true }
       }
 
       const { data, info } = await sharpImage.
