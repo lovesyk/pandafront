@@ -1,36 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectEntityManager } from '@nestjs/typeorm';
-import * as chokidar from 'chokidar';
-import { opendir } from 'fs/promises';
+import { opendir, stat } from 'fs/promises';
+import { FSWatcher, watch } from 'node:fs';
 import * as path from 'path';
-import { EntityManager } from 'typeorm';
 import { GalleryService } from './gallery.service';
 import { ScannerStats } from './models/scannerStats.model';
 
+const ROOT = "/data"
 
 @Injectable()
 export class ScannerService {
-  private events = [];
-  initialScanRunning = true
-  watcherEnabled = false
-  watcher: chokidar.FSWatcher | null = null
+  private scannerEnabled = false
+  private initialScanRunning = true
+  private watchers: { [key: string]: FSWatcher } = {}
 
-  constructor(@InjectEntityManager() private entityManager: EntityManager,
-    private galleryService: GalleryService) {
-    this.processEvents()
-    //this.enable()
-  }
-
-  private asyncWait = ms => new Promise(resolve => setTimeout(resolve, ms))
-  private async processEvents() {
-    while (true) {
-      const event = this.events.pop()
-      if (event) {
-        await event()
-      } else {
-        await this.asyncWait(500)
-      }
-    }
+  constructor(private galleryService: GalleryService) {
+    this.enable();
   }
 
   async restart() {
@@ -39,26 +23,31 @@ export class ScannerService {
   }
 
   async disable() {
-    if (this.watcher) {
-      Logger.debug("Stopping current watcher...")
-      await this.watcher.close()
-      this.watcher = null
-      this.watcherEnabled = false
+    if (this.scannerEnabled) {
+      Logger.debug("Stopping scanner...")
+      this.removeWatchers(ROOT)
+      this.scannerEnabled = false
     }
   }
 
-  private async scanManually(dir: string) {
-    const now = new Date()
-    await this.scanDir(dir)
-    await this.finishInitialScan(now)
+  async enable() {
+    if (!this.scannerEnabled) {
+      Logger.debug("Starting scanner...")
+      this.scannerEnabled = true
+
+      const now = new Date()
+      await this.scanDir(ROOT)
+      await this.finishInitialScan(now)
+    }
   }
 
   private async scanDir(currentDir: string) {
-    const dir = await opendir(currentDir);
+    this.addWatcher(currentDir)
+
+    const dir = await opendir(currentDir, { bufferSize: 2048 });
     for await (const dirent of dir) {
       if (dirent.name === 'api-metadata.json') {
-        await this.galleryService.updateGallery(currentDir).catch(reason => Logger.warn(`Failed updating gallery: ${reason}`))
-        return
+        await this.updateGallery(currentDir)
       } else if (dirent.isDirectory()) {
         const nextDir = path.join(currentDir, dirent.name)
         await this.scanDir(nextDir)
@@ -66,34 +55,60 @@ export class ScannerService {
     }
   }
 
-  async enable() {
-    Logger.debug("Starting new watcher...")
-    const root = "/data"
-    this.watcherEnabled = true
-    // https://github.com/paulmillr/chokidar/issues/1011
-    await this.scanManually(root)
+  private addWatcher(dir: string) {
+    if (!(dir in this.watchers)) {
+      Logger.debug(`Adding watcher: ${dir}`)
+      this.watchers[dir] = watch(dir, (event, filename) => this.onWatcherChanged(event, dir, filename))
+    }
+  }
 
-    this.watcher = chokidar.watch(root, {
-      ignoreInitial: true
-    }).on('all', (event, changedPath) => this.events.push(() => this.updateChangedPath(event, changedPath)))
+  private removeWatchers(dir: string) {
+    for (const key in this.watchers) {
+      if (key.startsWith(dir)) {
+        Logger.debug(`Removing watcher: ${key}`)
+        if (this.watchers[key]) {
+          this.watchers[key].close()
+        }
+        delete this.watchers[key]
+      }
+    }
+  }
+
+  private onWatcherChanged = async (event: string, dir: string, filename: string) => {
+    // TODO handle watchers not supplying a filename
+
+    let filepath = path.join(dir, filename)
+    Logger.debug(`Watcher event "${event}": ${filepath}`)
+
+    let isDirectory = false
+    try {
+      const stats = await stat(filepath)
+      isDirectory = stats.isDirectory()
+    } catch (err) {
+      // in case a directory is no longer accessible
+      this.removeWatchers(filepath)
+    }
+
+    if (isDirectory) {
+      await this.scanDir(filepath)
+    } else {
+      await this.updateGallery(dir)
+    }
+  }
+
+  private async updateGallery(dir: string) {
+    await this.galleryService.updateGallery(dir).catch(reason => Logger.warn(`Failed updating gallery: ${reason}`))
+  }
+
+  private finishInitialScan = async (date: Date) => {
+    await this.galleryService.deleteDbCacheBefore(date)
+    this.initialScanRunning = false
   }
 
   getStats(): ScannerStats {
     return {
-      enabled: this.watcherEnabled,
-      // watched: this.watcher?.getWatched() ?? {}
+      enabled: this.scannerEnabled,
+      initialScanRunning: this.initialScanRunning
     }
-  }
-
-  private updateChangedPath = async (event: string, changedPath: string) => {
-    if (['add', 'unlink', 'change'].includes(event) && (!this.initialScanRunning || this.galleryService.isMetadataFile(changedPath))) {
-      const dir = path.parse(changedPath).dir
-      await this.galleryService.updateGallery(dir).catch(reason => Logger.warn(`Failed updating gallery: ${reason}`))
-    }
-  }
-
-  private finishInitialScan = async (date: Date) => {
-    this.initialScanRunning = false
-    await this.galleryService.deleteDbCacheBefore(date)
   }
 }
