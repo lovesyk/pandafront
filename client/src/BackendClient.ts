@@ -95,11 +95,12 @@ export default class BackendClient {
       })
   }
 
-  async getScannerStats(): Promise<ScannerStats> {
+  async getScannerStats(): Promise<ScannerStats | null> {
     return fetch(`${this.getServerUrl()}/scanner/stats`, { method: 'GET' })
       .then(response => response.json())
       .catch(err => {
         console.log(err.message)
+        return null
       })
   }
 

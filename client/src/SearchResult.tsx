@@ -81,6 +81,7 @@ export default function SearchResult({ top }: { top: boolean }) {
 
   return (
     <>
+      <Settings />
       <Box
         alignItems="center"
         justifyContent="center"
@@ -89,7 +90,6 @@ export default function SearchResult({ top }: { top: boolean }) {
         padding={2}
       >
         <SearchForm searchRequest={searchRequest} setSearchRequest={setSearchRequest} />
-        <Settings />
       </Box>
       {top ? <></> :
         <>

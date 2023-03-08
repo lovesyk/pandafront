@@ -10,7 +10,7 @@ const ROOT = "/data"
 @Injectable()
 export class ScannerService {
   private scannerEnabled = false
-  private initialScanRunning = true
+  private initialScanRunning = false
   private watchers: { [key: string]: FSWatcher } = {}
 
   constructor(private galleryService: GalleryService) {
@@ -25,8 +25,11 @@ export class ScannerService {
   async disable() {
     if (this.scannerEnabled) {
       Logger.debug("Stopping scanner...")
+      this.initialScanRunning = true
       this.removeWatchers(ROOT)
+
       this.scannerEnabled = false
+      this.initialScanRunning = false
     }
   }
 
@@ -34,10 +37,12 @@ export class ScannerService {
     if (!this.scannerEnabled) {
       Logger.debug("Starting scanner...")
       this.scannerEnabled = true
+      this.initialScanRunning = true
 
       const now = new Date()
       await this.scanDir(ROOT)
-      await this.finishInitialScan(now)
+      await this.galleryService.deleteDbCacheBefore(now)
+      this.initialScanRunning = false
     }
   }
 
@@ -98,11 +103,6 @@ export class ScannerService {
 
   private async updateGallery(dir: string) {
     await this.galleryService.updateGallery(dir).catch(reason => Logger.warn(`Failed updating gallery: ${reason}`))
-  }
-
-  private finishInitialScan = async (date: Date) => {
-    await this.galleryService.deleteDbCacheBefore(date)
-    this.initialScanRunning = false
   }
 
   getStats(): ScannerStats {
