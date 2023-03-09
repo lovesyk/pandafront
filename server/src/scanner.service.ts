@@ -6,12 +6,14 @@ import { GalleryService } from './gallery.service';
 import { ScannerStats } from './models/scannerStats.model';
 
 const ROOT = "/data"
+const EVENT_DELAY_SEC = 30
 
 @Injectable()
 export class ScannerService {
   private scannerEnabled = false
   private initialScanRunning = false
   private watchers: { [key: string]: FSWatcher } = {}
+  private debouncedEvents: { [key: string]: NodeJS.Timeout } = {}
 
   constructor(private galleryService: GalleryService) {
     this.enable();
@@ -63,7 +65,7 @@ export class ScannerService {
   private addWatcher(dir: string) {
     if (!(dir in this.watchers)) {
       Logger.debug(`Adding watcher: ${dir}`)
-      this.watchers[dir] = watch(dir, (event, filename) => this.onWatcherChanged(event, dir, filename))
+      this.watchers[dir] = watch(dir, (event, filename) => this.debouncedOnWatcherChanged(dir, filename))
     }
   }
 
@@ -79,11 +81,25 @@ export class ScannerService {
     }
   }
 
-  private onWatcherChanged = async (event: string, dir: string, filename: string) => {
+  private debouncedOnWatcherChanged(dir: string, filename: string) {
+    const key = dir + (filename ? filename : '')
+
+    const previousEvent = this.debouncedEvents[key]
+    if (previousEvent) {
+      clearTimeout(previousEvent)
+    }
+
+    this.debouncedEvents[key] = setTimeout(() => {
+      this.onWatcherChanged(dir, filename)
+      delete this.debouncedEvents[key]
+    }, 1000 * EVENT_DELAY_SEC)
+  }
+
+  private onWatcherChanged = async (dir: string, filename: string) => {
     // TODO handle watchers not supplying a filename
 
     let filepath = path.join(dir, filename)
-    Logger.debug(`Watcher event "${event}": ${filepath}`)
+    Logger.debug(`Watcher event: ${filepath}`)
 
     let isDirectory = false
     try {
