@@ -8,7 +8,7 @@ export default function SearchResultGallery({ gallery, addTag }: { gallery: Gall
   return (
     <ListItem button component={Link} to={`/galleries/${gallery.gid}`}>
       <ListItemAvatar>
-        <Avatar variant="square" src={gallery.thumbnailUrl} alt="Gallery thumbnail" sx={{ height: '200px', width: '200px' }} />
+        <Avatar variant="square" src={gallery.thumbnailUrl} alt="Gallery thumbnail" sx={{ height: '200px', width: '200px' }} imgProps={{ loading: "lazy" }} />
       </ListItemAvatar>
       <Stack direction="column">
         <ListItemText primary={gallery.titleJpn && gallery.titleJpn.match(/\S/g) ? gallery.titleJpn : gallery.title} />
