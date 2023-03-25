@@ -31,9 +31,6 @@ export default function SearchForm({ searchRequest, setSearchRequest }: { search
     if (searchRequest.excludedTags && searchRequest.excludedTags.length > 0) {
       newSearchParams.excludedTags = JSON.stringify(searchRequest.excludedTags)
     }
-    if (searchRequest.page !== 1) {
-      newSearchParams.page = JSON.stringify(searchRequest.page)
-    }
 
     return createSearchParams(newSearchParams).toString()
   }
