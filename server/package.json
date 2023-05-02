@@ -17,6 +17,7 @@
     "@nestjs/core": "^9.3.9",
     "@nestjs/platform-express": "^9.3.9",
     "@nestjs/typeorm": "^9.0.1",
+    "better-sqlite3": "^7.6.2",
     "cache-manager": "^5.1.7",
     "entities": "^4.4.0",
     "mime": "^3.0.0",
