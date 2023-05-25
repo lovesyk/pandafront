@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, FindOptionsWhere, Like } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { Tag } from './entities/tag.entity';
 import { TagFilter } from './models/tagFilter.model';
 
@@ -13,12 +13,31 @@ export class TagService {
   }
 
   async find(filter: TagFilter): Promise<string[]> {
-    let findOptionsWhere: FindOptionsWhere<Tag> = {}
+    let tags: Tag[] = []
+
     if (filter.name) {
-      findOptionsWhere.name = Like(`%${filter.name}%`)
+      const exactValueTags = await this.entityManager.getRepository(Tag)
+      .createQueryBuilder("tag")
+      // https://stackoverflow.com/a/38330814
+      .where("replace(tag.name, rtrim(tag.name, replace(tag.name, ':', '')), '') = :name", { name: filter.name })
+      .getMany();
+      tags.push(...exactValueTags)
     }
 
-    const tags = await this.entityManager.getRepository(Tag).find({ where: findOptionsWhere, take: 20 });
+    let suggestionQuery = this.entityManager.getRepository(Tag)
+      .createQueryBuilder("tag")
+      .addSelect('COUNT(gallery.id) as galleryCount')
+      .leftJoin("tag.galleries", "gallery")
+    if (filter.name) {
+      suggestionQuery = suggestionQuery.where("tag.name like :name", { name: `%${filter.name}%` })
+    }
+    const suggestionTags = await suggestionQuery
+      .groupBy("tag.id")
+      .orderBy("galleryCount", "DESC")
+      .take(20)
+      .getMany();
+    tags.push(...suggestionTags)
+
     return tags.map(tag => tag.name);
   }
 
@@ -27,7 +46,7 @@ export class TagService {
     let tag = await repository.findOne({ where: { name: name } })
     if (!tag) {
       Logger.debug(`Caching tag ${name} in database...`)
-      tag = { name: name }
+      tag = { name: name, galleries: [] }
       await repository.save(tag)
     }
 

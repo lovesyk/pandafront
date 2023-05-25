@@ -52,7 +52,7 @@ export class GalleryEntity {
     @Column()
     torrentCount: number
 
+    @ManyToMany(() => Tag, (tag) => tag.galleries, { eager: true })
     @JoinTable()
-    @ManyToMany(() => Tag, { eager: true })
     tags: Tag[]
 }
