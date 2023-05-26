@@ -13,15 +13,15 @@ export class TagService {
   }
 
   async find(filter: TagFilter): Promise<string[]> {
-    let tags: Tag[] = []
+    let tags = new Set<string>()
 
     if (filter.name) {
       const exactValueTags = await this.entityManager.getRepository(Tag)
-      .createQueryBuilder("tag")
-      // https://stackoverflow.com/a/38330814
-      .where("replace(tag.name, rtrim(tag.name, replace(tag.name, ':', '')), '') = :name", { name: filter.name })
-      .getMany();
-      tags.push(...exactValueTags)
+        .createQueryBuilder("tag")
+        // https://stackoverflow.com/a/38330814
+        .where("replace(tag.name, rtrim(tag.name, replace(tag.name, ':', '')), '') = :name", { name: filter.name })
+        .getMany();
+      exactValueTags.forEach(tag => tags.add(tag.name))
     }
 
     let suggestionQuery = this.entityManager.getRepository(Tag)
@@ -36,9 +36,9 @@ export class TagService {
       .orderBy("galleryCount", "DESC")
       .take(20)
       .getMany();
-    tags.push(...suggestionTags)
+      suggestionTags.forEach(tag => tags.add(tag.name))
 
-    return tags.map(tag => tag.name);
+    return Array.from(tags);
   }
 
   async findOrCreate(name: string, transactionalEntityManager: EntityManager): Promise<Tag> {
