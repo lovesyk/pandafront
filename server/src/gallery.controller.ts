@@ -1,7 +1,7 @@
 import { Controller, Get, HttpException, HttpStatus, Logger, Param, Query, Res, StreamableFile } from '@nestjs/common';
 import { Response } from 'express';
 import { GalleryService } from './gallery.service';
-import GalleryMetadata from './models/metadata.model';
+import { GalleryMetadata, GalleryMetadataList } from './models/metadata.model';
 import { FindGalleriesQuery } from './queries/findGalleries.query';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 
@@ -11,13 +11,8 @@ export class GalleryController {
   }
 
   @Get()
-  async getGalleries(@Query() query: FindGalleriesQuery): Promise<GalleryMetadata[]> {
+  async getGalleries(@Query() query: FindGalleriesQuery): Promise<GalleryMetadataList> {
     return this.galleryService.findGalleries(this.toRequest(query))
-  }
-
-  @Get("count")
-  async getGalleryCount(@Query() query: FindGalleriesQuery): Promise<number> {
-    return this.galleryService.findGalleryCount(this.toRequest(query))
   }
 
   private toRequest(query: FindGalleriesQuery): FindGalleriesRequest {

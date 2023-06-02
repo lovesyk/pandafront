@@ -9,7 +9,7 @@ import { EntityManager, SelectQueryBuilder } from 'typeorm';
 import { CategoryService } from './category.service';
 import { GalleryEntity } from './entities/gallery.entity';
 import { GalleryImage } from './models/image.model';
-import GalleryMetadata from './models/metadata.model';
+import { GalleryMetadata, GalleryMetadataList } from './models/metadata.model';
 import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 import { TagService } from './tag.service';
@@ -59,6 +59,7 @@ export class GalleryService {
       rating: galleryEntity.rating,
       torrentCount: galleryEntity.torrentCount,
       tags: galleryEntity.tags.map(x => x.name),
+      createdDate: galleryEntity.createdDate,
       updatedDate: galleryEntity.updatedDate
     }
   }
@@ -255,11 +256,6 @@ export class GalleryService {
     })
   }
 
-  async findGalleryCount(request: FindGalleriesRequest): Promise<number> {
-    let queryBuilder = this.createFindGalleryQuery(request)
-    return queryBuilder.getCount()
-  }
-
   private createFindGalleryQuery(request: FindGalleriesRequest): SelectQueryBuilder<GalleryEntity> {
     let queryBuilder = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
     queryBuilder.addSelect('DATE(gallery_entity.createdDate)', 'createdDatePart')
@@ -300,12 +296,17 @@ export class GalleryService {
     return queryBuilder
   }
 
-  async findGalleries(request: FindGalleriesRequest): Promise<GalleryMetadata[]> {
+  async findGalleries(request: FindGalleriesRequest): Promise<GalleryMetadataList> {
     let queryBuilder = this.createFindGalleryQuery(request)
     queryBuilder.orderBy('createdDatePart', 'DESC')
     queryBuilder.addOrderBy('gallery_entity.postedDate', 'DESC')
     queryBuilder.skip(request.skip)
     queryBuilder.take(request.take)
-    return (await queryBuilder.getMany()).map(this.toApi)
+
+    const [galleries, count] = await queryBuilder.getManyAndCount();
+    return {
+      data : galleries.map(this.toApi),
+      count
+    }
   }
 }

@@ -1,5 +1,5 @@
 import './App.css';
-import { Gallery } from './models/gallery.model';
+import { Gallery, GalleryList } from './models/gallery.model';
 import GalleryMetadata from './models/metadata.model';
 import { ScannerStats } from './models/scannerStats.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
@@ -9,37 +9,29 @@ export default class BackendClient {
     return `${window.location.protocol}//${window.location.host}/server`
   }
 
-  async findGalleries(request: FindGalleriesRequest): Promise<Gallery[]> {
+  async findGalleries(request: FindGalleriesRequest): Promise<GalleryList> {
     const url = new URL(`${this.getServerUrl()}/galleries`)
     this.addFindGalleriesRequestSearchParams(url.searchParams, request)
 
     return fetch(url)
       .then(async response => {
-        const galleryMetadataList: GalleryMetadata[] = await response.json()
-        return galleryMetadataList.map(galleryMetadata => {
-          return {
-            ...galleryMetadata,
-            thumbnailUrl: `${this.getServerUrl()}/galleries/${galleryMetadata.gid}/thumbnail`
-          }
-        })
+        const galleryMetadataList: GalleryList = await response.json()
+        return {
+          data: galleryMetadataList.data.map(galleryMetadata => {
+            return {
+              ...galleryMetadata,
+              thumbnailUrl: `${this.getServerUrl()}/galleries/${galleryMetadata.gid}/thumbnail`
+            }
+          }),
+          count: galleryMetadataList.count
+        }
       })
       .catch(err => {
         console.log(err.message)
-        return Array<Gallery>()
-      })
-  }
-
-  async findGalleryCount(request: FindGalleriesRequest): Promise<number> {
-    const url = new URL(`${this.getServerUrl()}/galleries/count`)
-    this.addFindGalleriesRequestSearchParams(url.searchParams, request)
-
-    return fetch(url)
-      .then(async response => {
-        return await response.json();
-      })
-      .catch(err => {
-        console.log(err.message)
-        return 0
+        return {
+          data: [],
+          count: 0
+        }
       })
   }
 

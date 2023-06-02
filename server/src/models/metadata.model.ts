@@ -1,4 +1,4 @@
-export default interface GalleryMetadata {
+export interface GalleryMetadata {
     gid: number
     token: string
     title: string
@@ -13,5 +13,11 @@ export default interface GalleryMetadata {
     torrentCount: number
     tags: string[]
 
+    createdDate?: Date
     updatedDate?: Date
+}
+
+export interface GalleryMetadataList {
+    data: GalleryMetadata[]
+    count: number
 }

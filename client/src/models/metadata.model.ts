@@ -13,5 +13,6 @@ export default interface GalleryMetadata {
     torrentCount: number
     tags: string[]
 
+    createdDate?: Date,
     updatedDate?: Date
 }

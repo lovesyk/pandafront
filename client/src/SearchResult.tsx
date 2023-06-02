@@ -63,11 +63,9 @@ export default function SearchResult({ top }: { top: boolean }) {
   }
 
   const [loading, setLoading] = useState(true)
-  const search = (searchRequest : FindGalleryModel) => {
+  const search = (searchRequest: FindGalleryModel) => {
     setLoading(true)
-    backend.findGalleries({ ...searchRequest, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value); setLoading(false); })
-      .catch(console.log)
-    backend.findGalleryCount({ ...searchRequest }).then(setGalleryCount).catch(console.log)
+    backend.findGalleries({ ...searchRequest, skip: (searchRequest.page - 1) * galleriesPerPage, take: galleriesPerPage }).then((value) => { setGalleries(value.data); setGalleryCount(value.count); setLoading(false); }).catch(console.log)
   }
 
   const setPage = (page: number): void => {
