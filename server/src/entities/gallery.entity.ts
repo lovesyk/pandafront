@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Category } from "./category.entity";
 import { Tag } from "./tag.entity";
 
@@ -12,6 +12,9 @@ export class GalleryEntity {
 
     @Column()
     zipFilename: string
+
+    @CreateDateColumn()
+    createdDate?: Date
 
     @UpdateDateColumn()
     updatedDate?: Date

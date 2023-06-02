@@ -124,7 +124,7 @@ export class GalleryService {
           torrentCount: metadataFile.torrentcount,
           tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, transactionalEntityManager)
         }
-        const gallery: GalleryEntity = { ...oldGallery, ...newGallery, updatedDate: new Date() }
+        const gallery: GalleryEntity = { ...oldGallery, ...newGallery }
 
         await galleryRepository.save(gallery)
           .then(() => Logger.debug(`Cached gallery with ID ${gallery.gid} in DB.`))
@@ -262,6 +262,7 @@ export class GalleryService {
 
   private createFindGalleryQuery(request: FindGalleriesRequest): SelectQueryBuilder<GalleryEntity> {
     let queryBuilder = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
+    queryBuilder.addSelect('DATE(gallery_entity.createdDate)', 'createdDatePart')
     queryBuilder.leftJoinAndSelect('gallery_entity.category', 'category')
     queryBuilder.leftJoinAndSelect('gallery_entity.tags', 'tag')
     if (request.includedTags.length > 0) {
@@ -301,7 +302,8 @@ export class GalleryService {
 
   async findGalleries(request: FindGalleriesRequest): Promise<GalleryMetadata[]> {
     let queryBuilder = this.createFindGalleryQuery(request)
-    queryBuilder.orderBy("gallery_entity.postedDate", "DESC")
+    queryBuilder.orderBy('createdDatePart', 'DESC')
+    queryBuilder.addOrderBy('gallery_entity.postedDate', 'DESC')
     queryBuilder.skip(request.skip)
     queryBuilder.take(request.take)
     return (await queryBuilder.getMany()).map(this.toApi)
