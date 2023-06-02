@@ -10,7 +10,7 @@ export default function SearchTags({ searchTags, setSearchTags, id, placeholder 
   const [suggestedTags, setSuggestedTags] = useState(Array<string>())
   const backend = new BackendClient()
 
-  const [searchTagDebounced] = useDebounce(searchTag, 100)
+  const [searchTagDebounced] = useDebounce(searchTag, 500)
   useEffect(() => {
     backend.findTags(searchTagDebounced).then(setSuggestedTags).catch(console.log)
   }, [searchTagDebounced])
