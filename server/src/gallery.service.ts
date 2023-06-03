@@ -115,7 +115,7 @@ export class GalleryService {
           token: metadataFile.token,
           title: metadataFile.title,
           titleJpn: metadataFile.title_jpn,
-          category: await this.categoryService.findOrCreate(metadataFile.category, transactionalEntityManager),
+          category: await this.categoryService.findOrCreate(metadataFile.category, oldGallery?.category, transactionalEntityManager),
           uploader: metadataFile.uploader,
           postedDate: new Date(metadataFile.posted * 1000),
           fileCount: metadataFile.filecount,
@@ -123,7 +123,7 @@ export class GalleryService {
           expunged: metadataFile.expunged,
           rating: metadataFile.rating,
           torrentCount: metadataFile.torrentcount,
-          tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, transactionalEntityManager)
+          tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, oldGallery ? oldGallery.tags : [], transactionalEntityManager)
         }
         const gallery: GalleryEntity = { ...oldGallery, ...newGallery }
 

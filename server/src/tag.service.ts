@@ -8,8 +8,13 @@ import { TagFilter } from './models/tagFilter.model';
 export class TagService {
   constructor(@InjectEntityManager() private entityManager: EntityManager) { }
 
-  async findOrCreateMultiple(names: string[], transactionalEntityManager: EntityManager): Promise<Tag[]> {
-    return await Promise.all(names.map(name => this.findOrCreate(name, transactionalEntityManager)))
+  async findOrCreateMultiple(names: string[], oldTags: Tag[], transactionalEntityManager: EntityManager): Promise<Tag[]> {
+    const oldTagMap = new Map(
+      oldTags.map(tag => {
+        return [tag.name, tag];
+      }),
+    );
+    return await Promise.all(names.map(name => this.findOrCreate(name, oldTagMap.get(name), transactionalEntityManager)))
   }
 
   async find(filter: TagFilter): Promise<string[]> {
@@ -26,29 +31,47 @@ export class TagService {
 
     let suggestionQuery = this.entityManager.getRepository(Tag)
       .createQueryBuilder("tag")
-      .addSelect('COUNT(gallery.id) as galleryCount')
-      .leftJoin("tag.galleries", "gallery")
     if (filter.name) {
       suggestionQuery = suggestionQuery.where("tag.name like :name", { name: `%${filter.name}%` })
     }
     const suggestionTags = await suggestionQuery
       .groupBy("tag.id")
-      .orderBy("galleryCount", "DESC")
+      .orderBy("tag.count", "DESC")
       .take(20)
       .getMany();
-      suggestionTags.forEach(tag => tags.add(tag.name))
+    suggestionTags.forEach(tag => tags.add(tag.name))
 
     return Array.from(tags);
   }
 
-  async findOrCreate(name: string, transactionalEntityManager: EntityManager): Promise<Tag> {
+  async findOrCreate(name: string, oldTag: Tag, transactionalEntityManager: EntityManager): Promise<Tag> {
     const repository = transactionalEntityManager.getRepository(Tag)
-    let tag = await repository.findOne({ where: { name: name } })
-    if (!tag) {
-      Logger.debug(`Caching tag ${name} in database...`)
-      tag = { name: name, galleries: [] }
-      await repository.save(tag)
+
+    let tag: Tag = null
+    if (oldTag) {
+      if (name === oldTag.name) {
+        tag = oldTag
+      } else {
+        --oldTag.count
+        if (oldTag.count < 1) {
+          Logger.debug(`Removing tag ${name} from database...`)
+          repository.delete(oldTag)
+        } else {
+          repository.save(oldTag)
+        }
+      }
     }
+
+    if (!tag) {
+      tag = await repository.findOne({ where: { name: name } })
+      if (tag) {
+        ++tag.count
+      } else {
+        Logger.debug(`Caching tag ${name} in database...`)
+        tag = { name: name, count: 1, galleries: [] }
+      }
+    }
+    await repository.save(tag)
 
     return tag
   }

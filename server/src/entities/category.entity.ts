@@ -7,4 +7,7 @@ export class Category {
 
     @Column({ unique: true })
     name!: string
+
+    @Column()
+    count!: number
 }

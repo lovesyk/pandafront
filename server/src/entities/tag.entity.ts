@@ -9,6 +9,9 @@ export class Tag {
     @Column({ unique: true })
     name!: string
 
+    @Column()
+    count!: number
+
     @ManyToMany(() => GalleryEntity, (gallery) => gallery.tags)
     galleries: GalleryEntity[]
 }
