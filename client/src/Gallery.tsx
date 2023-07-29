@@ -4,6 +4,9 @@ import './App.css';
 import BackendClient from './BackendClient';
 import GalleryHeader from './GalleryHeader';
 import GalleryMetadata from './models/metadata.model';
+import { Gallery as GalleryModel } from './models/gallery.model';
+import { List } from '@mui/material';
+import SearchResultGallery from './SearchResultGallery';
 
 export default function Gallery() {
   const params = useParams()
@@ -11,6 +14,7 @@ export default function Gallery() {
   const backend = new BackendClient()
   const [gallery, setGallery] = useState<GalleryMetadata>()
   const [imageUrls, setImageUrls] = useState(Array<string>())
+  const [similarGalleries, setSimilarGalleries] = useState<GalleryModel[]>([])
   useEffect(() => {
     backend.findGallery(galleryId).then(gallery => {
       setGallery(gallery)
@@ -21,22 +25,36 @@ export default function Gallery() {
       }
       setImageUrls(imageUrls)
     })
+
+    backend.findSimilarGalleries(galleryId).then((value) => { setSimilarGalleries(value.data); }).catch(console.log)
   }, [galleryId])
 
   return (
-    gallery ?
+    <>
+      {gallery ?
+        <div>
+          <GalleryHeader gallery={gallery} />
+          {
+            imageUrls.map((imageUrl, index) => {
+              return (
+                <Link to={`/galleries/${galleryId}/images/${index}`} style={{ height: "200px", width: "200px", display: "inline-flex", verticalAlign: "middle", justifyContent: "center", alignItems: "center" }}>
+                  <img src={imageUrl} alt="Image" loading="lazy" />
+                </Link>
+              )
+            })
+          }
+        </div>
+        : <h2>Loading...</h2>}
       <div>
-        <GalleryHeader gallery={gallery} />
-        {
-          imageUrls.map((imageUrl, index) => {
-            return (
-              <Link to={`/galleries/${galleryId}/images/${index}`} style={{ height: "200px", width: "200px", display: "inline-flex", verticalAlign : "middle", justifyContent: "center", alignItems : "center" }}>
-                <img src={imageUrl} alt="Image" loading="lazy" />
-              </Link>
-            )
-          })
-        }
+        <h3>Similar galleries</h3>
+        <List>
+          {
+            similarGalleries.map(gallery => {
+              return <SearchResultGallery key={'gallery-' + gallery.gid} gallery={gallery} addTag={() => { }} />
+            })
+          }
+        </List>
       </div>
-      : <h2>Loading...</h2>
+    </>
   )
 }

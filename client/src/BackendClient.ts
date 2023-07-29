@@ -111,4 +111,29 @@ export default class BackendClient {
         console.log(err.message)
       })
   }
+
+  async findSimilarGalleries(galleryId: number): Promise<GalleryList> {
+    const url = new URL(`${this.getServerUrl()}/galleries/${galleryId}/similar`)
+
+    return fetch(url)
+      .then(async response => {
+        const galleryMetadataList: GalleryList = await response.json()
+        return {
+          data: galleryMetadataList.data.map(galleryMetadata => {
+            return {
+              ...galleryMetadata,
+              thumbnailUrl: `${this.getServerUrl()}/galleries/${galleryMetadata.gid}/thumbnail`
+            }
+          }),
+          count: galleryMetadataList.count
+        }
+      })
+      .catch(err => {
+        console.log(err.message)
+        return {
+          data: [],
+          count: 0
+        }
+      })
+  }
 }

@@ -5,7 +5,7 @@ import * as entities from "entities";
 import { readdir, readFile } from 'fs/promises';
 import * as path from 'path';
 import * as sharp from 'sharp';
-import { EntityManager, SelectQueryBuilder } from 'typeorm';
+import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { CategoryService } from './category.service';
 import { GalleryEntity } from './entities/gallery.entity';
 import { GalleryImage } from './models/image.model';
@@ -14,6 +14,8 @@ import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
 import { TagService } from './tag.service';
 import IZipEntry, { ZipCache } from './zipCache';
+import { FindSimilarGalleriesRequest } from './requests/findSimilarGalleries.request';
+import { Tag } from './entities/tag.entity';
 
 @Injectable()
 export class GalleryService {
@@ -305,8 +307,58 @@ export class GalleryService {
 
     const [galleries, count] = await queryBuilder.getManyAndCount();
     return {
-      data : galleries.map(this.toApi),
+      data: galleries.map(this.toApi),
       count
+    }
+  }
+
+  async findSimilarGalleries(request: FindSimilarGalleriesRequest): Promise<GalleryMetadataList> {
+    const { galleryId, skip, take } = request
+
+    const tagFilters = (alias: string) => {
+      return new Brackets((qb) => {
+        qb.where(`${alias}.name LIKE 'female:%'`)
+          .orWhere(`${alias}.name LIKE 'male:%'`)
+          .orWhere(`${alias}.name LIKE 'mixed:%'`)
+      })
+    }
+
+    const tagCountQuery = (type: 'source' | 'target') =>
+      this.entityManager.getRepository(Tag)
+        .createQueryBuilder(`${type}_count_tag`)
+        .select('COUNT(*)', 'count')
+        .innerJoin(`${type}_count_tag.galleries`, `${type}_count_gallery`)
+        .where(`${type}_count_gallery.id = ${type}_gallery.id`)
+        .andWhere(tagFilters(`${type}_count_tag`))
+
+    const idQuery = (qb: SelectQueryBuilder<GalleryEntity>) => qb.from(GalleryEntity, "source_gallery")
+      .select("target_gallery.id", "id")
+      .addSelect(
+        `COUNT(*) * 2.0 / ((${tagCountQuery('source').getQuery()})
+        + (${tagCountQuery('target').getQuery()}))`,
+        'similarity'
+      )
+      .innerJoin("source_gallery.tags", "source_tag")
+      .innerJoin("source_tag.galleries", "target_gallery")
+      .where(`source_gallery.gid = :galleryId`, { galleryId })
+      .andWhere(`target_gallery.gid != :galleryId`, { galleryId })
+      .andWhere(tagFilters("source_tag"))
+      .groupBy('target_gallery.id')
+      .orderBy('similarity', 'DESC')
+      .offset(skip)
+      .limit(take)
+
+    const galleries = await this.entityManager.getRepository(GalleryEntity)
+      .createQueryBuilder('gallery_entity')
+      .innerJoin(idQuery, "id_query", "gallery_entity.id = id_query.id")
+      .leftJoinAndSelect('gallery_entity.category', 'category')
+      .leftJoinAndSelect('gallery_entity.tags', 'tag')
+      .orderBy('id_query.similarity', 'DESC')
+      .getMany()
+
+    return {
+      data: galleries.map(this.toApi),
+      count: take
     }
   }
 }

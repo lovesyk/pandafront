@@ -4,6 +4,8 @@ import { GalleryService } from './gallery.service';
 import { GalleryMetadata, GalleryMetadataList } from './models/metadata.model';
 import { FindGalleriesQuery } from './queries/findGalleries.query';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
+import { FindSimilarGalleriesQuery } from './queries/findSimilarGalleries.query';
+import { FindSimilarGalleriesRequest } from './requests/findSimilarGalleries.request';
 
 @Controller("galleries")
 export class GalleryController {
@@ -84,5 +86,21 @@ export class GalleryController {
       'Content-Type': thumbnail.mimeType
     })
     return new StreamableFile(thumbnail.buffer)
+  }
+
+  @Get(":galleryId/similar")
+  async getSimilarGalleries(@Param("galleryId") galleryId: number): Promise<GalleryMetadataList> {
+    return this.galleryService.findSimilarGalleries(this.toSimilarityRequest({ galleryId }))
+  }
+
+  private toSimilarityRequest(query: FindSimilarGalleriesQuery): FindSimilarGalleriesRequest {
+    const request = new FindSimilarGalleriesRequest(query.galleryId);
+    if (query.skip) {
+      request.skip = parseInt(query.skip)
+    }
+    if (query.take) {
+      request.take = parseInt(query.take)
+    }
+    return request
   }
 }
