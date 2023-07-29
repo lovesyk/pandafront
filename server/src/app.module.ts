@@ -15,10 +15,11 @@ import { TagService } from './tag.service';
   imports: [
 
     TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
+      type: 'sqlite',
       database: '/db/app.sql',
       entities: [GalleryEntity, Category, Tag],
-      synchronize: true
+      synchronize: true,
+      logging: true
     }),
     TypeOrmModule.forFeature([GalleryEntity, Category, Tag]),
     CacheModule.register({ ttl: 5 * 60 * 1000 })],
