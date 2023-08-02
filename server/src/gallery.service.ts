@@ -2,7 +2,7 @@ import { CACHE_MANAGER, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import * as entities from "entities";
-import { readdir, readFile } from 'fs/promises';
+import { readdir, readFile, stat } from 'fs/promises';
 import * as path from 'path';
 import * as sharp from 'sharp';
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
@@ -16,6 +16,7 @@ import { TagService } from './tag.service';
 import IZipEntry, { ZipCache } from './zipCache';
 import { FindSimilarGalleriesRequest } from './requests/findSimilarGalleries.request';
 import { Tag } from './entities/tag.entity';
+import { Stats } from 'fs';
 
 @Injectable()
 export class GalleryService {
@@ -108,6 +109,14 @@ export class GalleryService {
           return
         }
 
+        let dirStat: Stats;
+        try {
+          dirStat = await stat(dir);
+        } catch (reason) {
+          Logger.warn(`Failed reading creation time for directory ${dir}: ${reason}.`)
+          return
+        }
+
         const oldGallery = await galleryRepository.findOne({ where: { gid: metadataFile.gid } })
         const newGallery: GalleryEntity = {
           dir: dir,
@@ -125,7 +134,8 @@ export class GalleryService {
           expunged: metadataFile.expunged,
           rating: metadataFile.rating,
           torrentCount: metadataFile.torrentcount,
-          tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, oldGallery ? oldGallery.tags : [], transactionalEntityManager)
+          tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, oldGallery ? oldGallery.tags : [], transactionalEntityManager),
+          createdDate: new Date(dirStat.mtimeMs)
         }
         const gallery: GalleryEntity = { ...oldGallery, ...newGallery }
 
@@ -260,7 +270,6 @@ export class GalleryService {
 
   private createFindGalleryQuery(request: FindGalleriesRequest): SelectQueryBuilder<GalleryEntity> {
     let queryBuilder = this.entityManager.getRepository(GalleryEntity).createQueryBuilder('gallery_entity')
-    queryBuilder.addSelect('DATE(gallery_entity.createdDate)', 'createdDatePart')
     queryBuilder.leftJoinAndSelect('gallery_entity.category', 'category')
     queryBuilder.leftJoinAndSelect('gallery_entity.tags', 'tag')
     if (request.includedTags.length > 0) {
@@ -300,8 +309,7 @@ export class GalleryService {
 
   async findGalleries(request: FindGalleriesRequest): Promise<GalleryMetadataList> {
     let queryBuilder = this.createFindGalleryQuery(request)
-    queryBuilder.orderBy('createdDatePart', 'DESC')
-    queryBuilder.addOrderBy('gallery_entity.postedDate', 'DESC')
+    queryBuilder.orderBy('gallery_entity.createdDate', 'DESC')
     queryBuilder.skip(request.skip)
     queryBuilder.take(request.take)
 
