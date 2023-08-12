@@ -109,11 +109,12 @@ export class GalleryService {
           return
         }
 
-        let dirStat: Stats;
+        const zipFilePath = path.join(dir, basename)
+        let zipStat: Stats;
         try {
-          dirStat = await stat(dir);
+          zipStat = await stat(zipFilePath);
         } catch (reason) {
-          Logger.warn(`Failed reading creation time for directory ${dir}: ${reason}.`)
+          Logger.warn(`Failed reading creation time for zip file ${zipFilePath}: ${reason}.`)
           return
         }
 
@@ -135,7 +136,7 @@ export class GalleryService {
           rating: metadataFile.rating,
           torrentCount: metadataFile.torrentcount,
           tags: await this.tagService.findOrCreateMultiple(metadataFile.tags, oldGallery ? oldGallery.tags : [], transactionalEntityManager),
-          createdDate: new Date(dirStat.mtimeMs)
+          createdDate: new Date(zipStat.mtimeMs)
         }
         const gallery: GalleryEntity = { ...oldGallery, ...newGallery }
 
