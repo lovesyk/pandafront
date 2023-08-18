@@ -18,8 +18,7 @@ import { TagService } from './tag.service';
       type: 'sqlite',
       database: '/db/app.sql',
       entities: [GalleryEntity, Category, Tag],
-      synchronize: true,
-      logging: true
+      synchronize: true
     }),
     TypeOrmModule.forFeature([GalleryEntity, Category, Tag]),
     CacheModule.register({ ttl: 5 * 60 * 1000 })],
