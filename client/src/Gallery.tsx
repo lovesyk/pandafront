@@ -37,8 +37,8 @@ export default function Gallery() {
           {
             imageUrls.map((imageUrl, index) => {
               return (
-                <Link to={`/galleries/${galleryId}/images/${index}`} style={{ height: "200px", width: "200px", display: "inline-flex", verticalAlign: "middle", justifyContent: "center", alignItems: "center" }}>
-                  <img src={imageUrl} alt="Image" loading="lazy" />
+                <Link to={`/galleries/${galleryId}/images/${index}`} style={{ display: "inline-flex", verticalAlign: "middle", justifyContent: "center", alignItems: "center" }}>
+                  <img src={imageUrl} width={ 200 } height={ 200 } alt="Image" loading="lazy" />
                 </Link>
               )
             })
