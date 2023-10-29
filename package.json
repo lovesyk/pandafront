@@ -1,0 +1,19 @@
+{
+  "name": "pandafront-dev",
+  "version": "0.0.1",
+  "description": "pandafront gallery viewer.",
+  "author": "lovesyk",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "npm@0.0.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "start:dev": "turbo run start:dev"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.4"
+  }
+}

@@ -16,7 +16,9 @@ export class ScannerService {
   private debouncedEvents: { [key: string]: NodeJS.Timeout } = {}
 
   constructor(private galleryService: GalleryService) {
-    this.enable();
+    if (!process.env.DISABLE_SCANNER) {
+      this.enable();
+    }
   }
 
   async restart() {
