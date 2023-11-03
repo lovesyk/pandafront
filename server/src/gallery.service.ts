@@ -2,27 +2,35 @@ import { CACHE_MANAGER, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import * as entities from "entities";
-import { readdir, readFile, stat } from 'fs/promises';
+import { Stats } from 'fs';
+import { readFile, readdir, stat } from 'fs/promises';
 import * as path from 'path';
 import * as sharp from 'sharp';
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { CategoryService } from './category.service';
 import { GalleryEntity } from './entities/gallery.entity';
+import { Tag } from './entities/tag.entity';
 import { GalleryImage } from './models/image.model';
 import { GalleryMetadata, GalleryMetadataList } from './models/metadata.model';
 import OriginalGalleryMetadata from './models/original.metadata.model';
 import { FindGalleriesRequest } from './requests/findGalleries.request';
+import { FindSimilarGalleriesRequest } from './requests/findSimilarGalleries.request';
 import { TagService } from './tag.service';
 import IZipEntry, { ZipCache } from './zipCache';
-import { FindSimilarGalleriesRequest } from './requests/findSimilarGalleries.request';
-import { Tag } from './entities/tag.entity';
-import { Stats } from 'fs';
+
+interface ImageTask {
+  galleryId: number,
+  imageId?: number,
+  task: () => Promise<GalleryImage | null>,
+  resolve: (value: GalleryImage | PromiseLike<GalleryImage>) => void,
+  reject: (reason?: any) => void,
+}
 
 @Injectable()
 export class GalleryService {
-  private MAX_CONCURRENT_IMAGE_TASKS = 2
+  private MAX_CONCURRENT_IMAGE_TASKS = 5
+  private imageTasks: ImageTask[] = [];
   private runningImageTasks = 0
-  private asyncWait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
   constructor(@InjectEntityManager() private entityManager: EntityManager,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -167,32 +175,58 @@ export class GalleryService {
   }
 
   async getImage(galleryId: number, imageId: number, width?: number, height?: number): Promise<GalleryImage | null> {
-    return await this.runImageTask(async () => {
-      const zip = await this.findZip(galleryId)
-      if (zip) {
-        const zipEntries = zip.getEntries()
-        if (imageId < zipEntries.length) {
-          const zipEntry = zipEntries.sort(this.compareZipEntries)[imageId]
-          const data = await zip.readFileAsync(zipEntry);
-          const image = new GalleryImage(data, zipEntry.name)
-          return await this.resize(image, width, height)
+    return await this.runImageTask({
+      galleryId, imageId, task: async () => {
+        const zip = await this.findZip(galleryId)
+        if (zip) {
+          const zipEntries = zip.getEntries()
+          if (imageId < zipEntries.length) {
+            const zipEntry = zipEntries.sort(this.compareZipEntries)[imageId]
+            const data = await zip.readFileAsync(zipEntry);
+            const image = new GalleryImage(data, zipEntry.name)
+            return await this.resize(image, width, height)
+          }
         }
-      }
 
-      return null
+        return null
+      }
     })
   }
 
-  private async runImageTask(task: () => Promise<GalleryImage | null>): Promise<GalleryImage | null> {
-    while (this.runningImageTasks > this.MAX_CONCURRENT_IMAGE_TASKS) {
-      await this.asyncWait(50)
-    }
-    ++this.runningImageTasks
+  private async runImageTask(task: Pick<ImageTask, 'galleryId' | 'imageId' | 'task'>): Promise<GalleryImage | null> {
+    return new Promise((resolve, reject) => {
+      this.imageTasks = [...this.imageTasks, { ...task, resolve, reject }].sort(this.compareImageTasks);
+      this.processImageTasks();
+    });
+  }
 
-    try {
-      return await task()
-    } finally {
-      --this.runningImageTasks
+  private compareImageTasks(a: ImageTask, b: ImageTask): number {
+    const galleryIdResult = b.galleryId - a.galleryId;
+    if (galleryIdResult != 0) {
+      return galleryIdResult;
+    }
+
+    if (a.imageId !== undefined) {
+      if (b.imageId !== undefined) {
+        return a.imageId - b.imageId;
+      }
+      return -1;
+    }
+    return 1;
+  }
+
+  private async processImageTasks() {
+    while (this.runningImageTasks < this.MAX_CONCURRENT_IMAGE_TASKS && this.imageTasks.length > 0) {
+      const { task, resolve, reject } = this.imageTasks.shift();
+      this.runningImageTasks++;
+      try {
+        const result = await task();
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      } finally {
+        this.runningImageTasks--;
+      }
     }
   }
 
@@ -255,17 +289,19 @@ export class GalleryService {
   }
 
   async getThumbnail(galleryId: number): Promise<GalleryImage | null> {
-    return await this.runImageTask(async () => {
-      const gallery = await this.findGalleryEntity(galleryId)
-      const thumbnail = await readFile(path.join(gallery.dir, "thumbnail.jpg"))
-        .then(value =>
-          new GalleryImage(value, "thumbnail.jpg")
-        )
-        .catch(reason => {
-          Logger.warn(`Failed reading thumbnail: ${reason}`)
-        })
+    return await this.runImageTask({
+      galleryId, task: async () => {
+        const gallery = await this.findGalleryEntity(galleryId)
+        const thumbnail = await readFile(path.join(gallery.dir, "thumbnail.jpg"))
+          .then(value =>
+            new GalleryImage(value, "thumbnail.jpg")
+          )
+          .catch(reason => {
+            Logger.warn(`Failed reading thumbnail: ${reason}`)
+          })
 
-      return thumbnail ? thumbnail : null
+        return thumbnail ? thumbnail : null
+      }
     })
   }
 
