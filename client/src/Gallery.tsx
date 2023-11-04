@@ -1,12 +1,12 @@
+import { List } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './App.css';
 import BackendClient from './BackendClient';
 import GalleryHeader from './GalleryHeader';
-import GalleryMetadata from './models/metadata.model';
-import { Gallery as GalleryModel } from './models/gallery.model';
-import { List } from '@mui/material';
 import SearchResultGallery from './SearchResultGallery';
+import { Gallery as GalleryModel } from './models/gallery.model';
+import GalleryMetadata from './models/metadata.model';
 
 export default function Gallery() {
   const params = useParams()
@@ -25,9 +25,14 @@ export default function Gallery() {
       }
       setImageUrls(imageUrls)
     })
-
-    backend.findSimilarGalleries(galleryId).then((value) => { setSimilarGalleries(value.data); }).catch(console.log)
   }, [galleryId])
+
+  const [imageLoadedCount, setImageLoadedCount] = useState(0);
+  useEffect(() => {
+    if (imageLoadedCount > 0 && imageLoadedCount >= imageUrls.length) {
+      backend.findSimilarGalleries(galleryId).then((value) => { setSimilarGalleries(value.data); }).catch(console.log)
+    }
+  }, [imageLoadedCount])
 
   return (
     <>
@@ -37,8 +42,8 @@ export default function Gallery() {
           {
             imageUrls.map((imageUrl, index) => {
               return (
-                <Link to={`/galleries/${galleryId}/images/${index}`} style={{ display: "inline-flex", verticalAlign: "middle", justifyContent: "center", alignItems: "center" }}>
-                  <img src={imageUrl} width={ 200 } height={ 200 } alt="Image" loading="lazy" />
+                <Link key={index} to={`/galleries/${galleryId}/images/${index}`} style={{ display: "inline-flex", verticalAlign: "middle", justifyContent: "center", alignItems: "center" }}>
+                  <img src={imageUrl} width={200} height={200} alt="Image" loading="lazy" onLoad={() => setImageLoadedCount(imageLoadedCount => imageLoadedCount + 1)} />
                 </Link>
               )
             })
