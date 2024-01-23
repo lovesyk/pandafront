@@ -136,7 +136,7 @@ export class GalleryService {
           title: metadataFile.title,
           titleJpn: metadataFile.title_jpn,
           category: await this.categoryService.findOrCreate(metadataFile.category, oldGallery?.category, transactionalEntityManager),
-          uploader: metadataFile.uploader,
+          uploader: metadataFile.uploader ?? '',
           postedDate: new Date(metadataFile.posted * 1000),
           fileCount: metadataFile.filecount,
           fileSize: metadataFile.filesize,
