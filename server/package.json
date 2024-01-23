@@ -22,8 +22,8 @@
     "mime": "^3.0.0",
     "node-stream-zip": "^1.15.0",
     "sharp": "^0.31.3",
-    "sqlite3": "^5.1.6",
-    "typeorm": "^0.3.12"
+    "sqlite3": "^5.1.7",
+    "typeorm": "^0.3.19"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.2.0",
