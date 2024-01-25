@@ -15,7 +15,7 @@ import { TagService } from './tag.service';
   imports: [
 
     TypeOrmModule.forRoot({
-      type: 'sqlite',
+      type: 'better-sqlite3',
       database: '/db/app.sql',
       entities: [GalleryEntity, Category, Tag],
       synchronize: true
