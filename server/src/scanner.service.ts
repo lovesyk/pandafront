@@ -5,7 +5,7 @@ import * as path from 'path';
 import { GalleryService } from './gallery.service';
 import { ScannerStats } from './models/scannerStats.model';
 
-const ROOT = "/data"
+const ROOT = "/data/majin3/unfiltered-loli"
 const EVENT_DELAY_SEC = 30
 
 @Injectable()
