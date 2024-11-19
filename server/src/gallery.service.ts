@@ -292,17 +292,25 @@ export class GalleryService {
     return await this.runImageTask({
       galleryId, task: async () => {
         const gallery = await this.findGalleryEntity(galleryId)
-        const thumbnail = await readFile(path.join(gallery.dir, "thumbnail.jpg"))
-          .then(value =>
-            new GalleryImage(value, "thumbnail.jpg")
-          )
-          .catch(reason => {
-            Logger.warn(`Failed reading thumbnail: ${reason}`)
-          })
 
-        return thumbnail ? thumbnail : null
+        let thumbnailBuffer: Buffer | null = null
+        try {
+          for (var basename of await readdir(gallery.dir)) {
+            if (this.isThumbnailFile(basename)) {
+              thumbnailBuffer = await readFile(path.join(gallery.dir, basename))
+            }
+          }
+        } catch (e: unknown) {
+          Logger.warn('Failed reading thumbnail', e)
+        }
+
+        return thumbnailBuffer ? new GalleryImage(thumbnailBuffer, basename) : null;
       }
     })
+  }
+
+  private isThumbnailFile(basename: string): boolean {
+    return path.parse(basename).name === "thumbnail"
   }
 
   private createFindGalleryQuery(request: FindGalleriesRequest): SelectQueryBuilder<GalleryEntity> {
